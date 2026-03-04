@@ -1,0 +1,56 @@
+# Combined Inference Pipeline: TRELLIS.2 Geometry + Hunyuan3D-Paint Textures
+# Runtime image (no devel headers needed for inference)
+FROM nvidia/cuda:12.4.1-runtime-ubuntu22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONUNBUFFERED=1
+ENV CUDA_HOME=/usr/local/cuda
+ENV PATH="${CUDA_HOME}/bin:${PATH}"
+ENV LD_LIBRARY_PATH="${CUDA_HOME}/lib64:${LD_LIBRARY_PATH}"
+
+# System dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3.10 python3.10-dev python3-pip \
+    git git-lfs wget curl \
+    build-essential cmake \
+    libgl1-mesa-glx libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN ln -sf /usr/bin/python3.10 /usr/bin/python && \
+    ln -sf /usr/bin/python3.10 /usr/bin/python3
+
+RUN python -m pip install --upgrade pip setuptools wheel
+
+# PyTorch
+RUN pip install torch==2.5.1 torchvision==0.20.1 --index-url https://download.pytorch.org/whl/cu124
+
+# Clone both repos
+WORKDIR /opt
+RUN git clone https://github.com/microsoft/TRELLIS.2.git && \
+    git clone https://github.com/Tencent-Hunyuan/Hunyuan3D-2.1.git
+
+# Install TRELLIS.2 inference deps
+WORKDIR /opt/TRELLIS.2
+RUN pip install -r requirements.txt && \
+    bash setup.sh --basic --o-voxel
+
+# Install Hunyuan3D Paint deps
+WORKDIR /opt/Hunyuan3D-2.1
+RUN pip install -r requirements.txt && \
+    cd hy3dpaint && pip install -e .
+
+# API server + mesh processing
+RUN pip install fastapi uvicorn python-multipart \
+    trimesh pymeshlab xatlas pygltflib \
+    Pillow opencv-python rembg
+
+# Copy pipeline code
+COPY pipeline/ /app/pipeline/
+COPY configs/ /app/configs/
+
+WORKDIR /app
+ENV PYTHONPATH="/opt/TRELLIS.2:/opt/Hunyuan3D-2.1:${PYTHONPATH}"
+
+EXPOSE 8080
+
+CMD ["python", "-m", "uvicorn", "pipeline.api_server:app", "--host", "0.0.0.0", "--port", "8080"]

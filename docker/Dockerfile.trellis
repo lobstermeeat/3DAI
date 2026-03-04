@@ -1,0 +1,51 @@
+# TRELLIS.2 Fine-Tuning Environment
+# Requires NVIDIA GPU with 24GB+ VRAM (A100 80GB recommended)
+FROM nvidia/cuda:12.4.1-devel-ubuntu22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONUNBUFFERED=1
+ENV CUDA_HOME=/usr/local/cuda
+ENV PATH="${CUDA_HOME}/bin:${PATH}"
+ENV LD_LIBRARY_PATH="${CUDA_HOME}/lib64:${LD_LIBRARY_PATH}"
+
+# System dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3.10 python3.10-dev python3-pip python3.10-venv \
+    git git-lfs wget curl unzip \
+    build-essential cmake ninja-build \
+    libeigen3-dev libgl1-mesa-glx libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN ln -sf /usr/bin/python3.10 /usr/bin/python && \
+    ln -sf /usr/bin/python3.10 /usr/bin/python3
+
+# Upgrade pip
+RUN python -m pip install --upgrade pip setuptools wheel
+
+# PyTorch with CUDA 12.4
+RUN pip install torch==2.5.1 torchvision==0.20.1 --index-url https://download.pytorch.org/whl/cu124
+
+# Flash Attention 2 (required by TRELLIS.2 DiT)
+RUN pip install flash-attn --no-build-isolation
+
+# Clone TRELLIS.2
+WORKDIR /opt
+RUN git clone https://github.com/microsoft/TRELLIS.2.git
+
+# Install TRELLIS.2 dependencies
+WORKDIR /opt/TRELLIS.2
+RUN pip install -r requirements.txt
+
+# Build O-Voxel extensions (requires Eigen)
+RUN bash setup.sh --basic --o-voxel --flexgemm
+
+# Training utilities
+RUN pip install tensorboard wandb tqdm pyyaml
+
+# Data toolkit dependencies
+RUN pip install trimesh pymeshlab open3d xatlas
+
+WORKDIR /workspace
+
+# Default: start bash for interactive use
+CMD ["bash"]

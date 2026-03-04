@@ -1,0 +1,72 @@
+{
+  "_comment": "RunPod pod templates for each phase of the fine-tuning pipeline",
+
+  "data_prep": {
+    "name": "forge3d-data-prep",
+    "gpu": "RTX 4090",
+    "gpu_count": 1,
+    "vcpu": 16,
+    "ram_gb": 64,
+    "container_disk_gb": 200,
+    "volume_mount": "/workspace",
+    "volume_size_gb": 500,
+    "estimated_cost_per_hour": 0.39,
+    "purpose": "O-Voxel preprocessing, Blender rendering, dataset filtering"
+  },
+
+  "trellis_training": {
+    "name": "forge3d-trellis-train",
+    "gpu": "A100 80GB SXM",
+    "gpu_count": 1,
+    "vcpu": 16,
+    "ram_gb": 128,
+    "container_disk_gb": 100,
+    "volume_mount": "/workspace",
+    "volume_size_gb": 500,
+    "estimated_cost_per_hour": 1.39,
+    "spot_cost_per_hour": 0.79,
+    "purpose": "Fine-tune TRELLIS.2 ss_flow and shape_flow models",
+    "ports": "6006/http,8888/http",
+    "env": {
+      "TRELLIS_DIR": "/workspace/repos/TRELLIS.2",
+      "PYTHONPATH": "/workspace/repos/TRELLIS.2"
+    }
+  },
+
+  "hunyuan_training": {
+    "name": "forge3d-hunyuan-train",
+    "gpu": "A100 80GB SXM",
+    "gpu_count": 1,
+    "vcpu": 16,
+    "ram_gb": 128,
+    "container_disk_gb": 100,
+    "volume_mount": "/workspace",
+    "volume_size_gb": 500,
+    "estimated_cost_per_hour": 1.39,
+    "spot_cost_per_hour": 0.79,
+    "purpose": "Fine-tune Hunyuan3D-Paint PBR texture model",
+    "ports": "6006/http,8888/http",
+    "env": {
+      "HUNYUAN_DIR": "/workspace/repos/Hunyuan3D-2.1",
+      "PYTHONPATH": "/workspace/repos/Hunyuan3D-2.1"
+    }
+  },
+
+  "eval_inference": {
+    "name": "forge3d-eval",
+    "gpu": "RTX A6000",
+    "gpu_count": 1,
+    "vcpu": 8,
+    "ram_gb": 64,
+    "container_disk_gb": 100,
+    "volume_mount": "/workspace",
+    "volume_size_gb": 500,
+    "estimated_cost_per_hour": 0.69,
+    "purpose": "Evaluation, benchmarking, combined pipeline testing",
+    "ports": "6006/http,8080/http",
+    "env": {
+      "TRELLIS_PATH": "/workspace/repos/TRELLIS.2",
+      "HUNYUAN_PATH": "/workspace/repos/Hunyuan3D-2.1"
+    }
+  }
+}

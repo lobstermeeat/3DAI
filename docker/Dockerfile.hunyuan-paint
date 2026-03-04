@@ -1,0 +1,51 @@
+# Hunyuan3D-Paint 2.1 Fine-Tuning Environment
+# Requires NVIDIA GPU with 24GB+ VRAM (A100 80GB recommended)
+FROM nvidia/cuda:12.4.1-devel-ubuntu22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONUNBUFFERED=1
+ENV CUDA_HOME=/usr/local/cuda
+ENV PATH="${CUDA_HOME}/bin:${PATH}"
+ENV LD_LIBRARY_PATH="${CUDA_HOME}/lib64:${LD_LIBRARY_PATH}"
+
+# System dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3.10 python3.10-dev python3-pip python3.10-venv \
+    git git-lfs wget curl unzip \
+    build-essential cmake ninja-build \
+    libgl1-mesa-glx libglib2.0-0 libsm6 libxrender1 libxext6 \
+    blender \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN ln -sf /usr/bin/python3.10 /usr/bin/python && \
+    ln -sf /usr/bin/python3.10 /usr/bin/python3
+
+# Upgrade pip
+RUN python -m pip install --upgrade pip setuptools wheel
+
+# PyTorch with CUDA 12.4
+RUN pip install torch==2.5.1 torchvision==0.20.1 --index-url https://download.pytorch.org/whl/cu124
+
+# Clone Hunyuan3D-2.1
+WORKDIR /opt
+RUN git clone https://github.com/Tencent-Hunyuan/Hunyuan3D-2.1.git
+
+# Install Hunyuan3D dependencies
+WORKDIR /opt/Hunyuan3D-2.1
+RUN pip install -r requirements.txt
+
+# Build custom rasterizer and differentiable renderer (required by Paint module)
+RUN cd hy3dpaint && pip install -e .
+
+# Training utilities
+RUN pip install tensorboard wandb tqdm pyyaml
+
+# Evaluation
+RUN pip install lpips torchmetrics pytorch-fid
+
+# Data processing
+RUN pip install trimesh pymeshlab open3d xatlas Pillow opencv-python rembg
+
+WORKDIR /workspace
+
+CMD ["bash"]

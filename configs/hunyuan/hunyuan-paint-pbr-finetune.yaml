@@ -1,0 +1,61 @@
+# Hunyuan3D-Paint 2.1 PBR Fine-Tuning Configuration
+# Fine-tunes the multi-view PBR texture diffusion model
+# Run on 1x A100 80GB
+
+model:
+  base_learning_rate: 2.0e-05  # Reduced from 5e-5 for fine-tuning
+  target: hunyuanpaintpbr.model.HunyuanPaintPBR
+  params:
+    # Architecture (unchanged from pretrained)
+    max_num_view: 6
+    resolution: 512
+    use_pbr: true
+    # PBR channels: albedo (RGB) + metallic (1) + roughness (1)
+    pbr_channels: 5
+
+training:
+  max_steps: 50000
+  batch_size: 1                   # Per-GPU, Paint module needs ~21GB VRAM
+  accumulate_grad_batches: 4      # Effective batch size: 4
+  gradient_clip_val: 1.0
+  mixed_precision: bf16
+
+  optimizer:
+    type: AdamW
+    lr: 2.0e-05
+    weight_decay: 0.01
+    betas: [0.9, 0.999]
+
+  scheduler:
+    type: CosineAnnealing
+    T_max: 50000
+    eta_min: 1.0e-06
+    warmup_steps: 500
+
+  checkpointing:
+    save_every_n_steps: 2000
+    save_top_k: 3
+    monitor: val_loss
+    mode: min
+
+  logging:
+    log_every_n_steps: 100
+    sample_every_n_steps: 2000
+    tensorboard: true
+
+data:
+  train_data_dir: /workspace/data/hunyuan/train
+  val_data_dir: /workspace/data/hunyuan/val
+  examples_json: /workspace/data/hunyuan/examples.json
+  num_workers: 4
+  # Multi-view rendering config
+  num_views: 6
+  render_resolution: 512
+  # Lighting conditions for illumination-invariant training
+  lighting_conditions:
+    - ambient
+    - envmap
+    - point_light
+
+# Resume from pretrained checkpoint
+resume_from: /workspace/checkpoints/hunyuan/pretrained/hy3dpaint
