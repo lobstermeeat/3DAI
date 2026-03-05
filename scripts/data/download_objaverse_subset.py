@@ -125,8 +125,20 @@ def download_objects(uids: list, output_dir: str, max_workers: int = 8) -> dict:
         download_processes=max_workers,
     )
 
-    logger.info(f"Downloaded {len(objects)} objects")
-    return objects
+    # Copy files from objaverse cache to output_dir
+    import shutil
+    copied = {}
+    for uid, cached_path in objects.items():
+        if os.path.exists(cached_path):
+            ext = os.path.splitext(cached_path)[1]
+            dest = os.path.join(output_dir, f"{uid}{ext}")
+            shutil.copy2(cached_path, dest)
+            copied[uid] = dest
+        else:
+            logger.warning(f"Cached file not found for {uid}: {cached_path}")
+
+    logger.info(f"Downloaded {len(objects)} objects, copied {len(copied)} to {output_dir}")
+    return copied
 
 
 def save_manifest(objects: dict, annotations: dict, output_dir: str):

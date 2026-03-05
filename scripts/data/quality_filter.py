@@ -195,9 +195,12 @@ def main():
     failed = [r for r in results if not r["valid"] or r["score"] < args.min_score]
 
     logger.info(f"Quality filter results: {len(passed)} passed, {len(failed)} failed")
-    logger.info(f"  Score distribution: min={min(r['score'] for r in results):.1f}, "
-                f"max={max(r['score'] for r in results):.1f}, "
-                f"mean={np.mean([r['score'] for r in results]):.1f}")
+    if results:
+        logger.info(f"  Score distribution: min={min(r['score'] for r in results):.1f}, "
+                    f"max={max(r['score'] for r in results):.1f}, "
+                    f"mean={np.mean([r['score'] for r in results]):.1f}")
+    else:
+        logger.warning("No mesh files found to analyze.")
 
     # Copy passed files to output
     for r in tqdm(passed, desc="Copying passed assets"):
