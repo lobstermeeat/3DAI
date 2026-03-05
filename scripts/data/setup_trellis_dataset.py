@@ -61,7 +61,7 @@ def add_args(parser):
                         help='Data source (unused for Forge3D)')
 
 
-def foreach_instance(metadata, root, func, max_workers=0, desc='Processing'):
+def foreach_instance(metadata, root, func, max_workers=0, desc='Processing', no_file=False):
     """
     Iterate over dataset instances and apply func.
 
@@ -71,6 +71,8 @@ def foreach_instance(metadata, root, func, max_workers=0, desc='Processing'):
         func: callable(file_path, metadatum) -> dict
         max_workers: number of parallel workers (0 = sequential)
         desc: progress bar description
+        no_file: if True, pass None as file_path (used for steps that
+                 read from processed dirs, not raw files)
 
     Returns:
         DataFrame with results
@@ -79,10 +81,13 @@ def foreach_instance(metadata, root, func, max_workers=0, desc='Processing'):
 
     if max_workers <= 0:
         for _, row in tqdm(metadata.iterrows(), total=len(metadata), desc=desc):
-            file_path = os.path.join(root, 'raw', row['local_path'])
-            if not os.path.exists(file_path):
-                print(f"File not found: {file_path}")
-                continue
+            if no_file:
+                file_path = None
+            else:
+                file_path = os.path.join(root, 'raw', row['local_path'])
+                if not os.path.exists(file_path):
+                    print(f"File not found: {file_path}")
+                    continue
             try:
                 result = func(file_path, row.to_dict())
                 records.append(result)
@@ -92,10 +97,13 @@ def foreach_instance(metadata, root, func, max_workers=0, desc='Processing'):
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = {}
             for _, row in metadata.iterrows():
-                file_path = os.path.join(root, 'raw', row['local_path'])
-                if not os.path.exists(file_path):
-                    print(f"File not found: {file_path}")
-                    continue
+                if no_file:
+                    file_path = None
+                else:
+                    file_path = os.path.join(root, 'raw', row['local_path'])
+                    if not os.path.exists(file_path):
+                        print(f"File not found: {file_path}")
+                        continue
                 future = executor.submit(func, file_path, row.to_dict())
                 futures[future] = row['sha256']
 
