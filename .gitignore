@@ -24,7 +24,7 @@ env/
 Thumbs.db
 
 # Data (too large for git)
-data/
+/data/
 checkpoints/
 results/
 logs/
