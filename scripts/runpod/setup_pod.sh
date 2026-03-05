@@ -36,7 +36,7 @@ if [[ "$MODE" == "--trellis" || "$MODE" == "--both" ]]; then
 
     echo "[2/5] Installing TRELLIS.2 dependencies..."
     cd $WORKSPACE/repos/TRELLIS.2
-    pip install -r requirements.txt 2>&1 | tail -5
+    if [ -f requirements.txt ]; then pip install -r requirements.txt 2>&1 | tail -5; fi
     bash setup.sh --basic --flash-attn --o-voxel --flexgemm 2>&1 | tail -5
     cd $WORKSPACE/repos
 fi
