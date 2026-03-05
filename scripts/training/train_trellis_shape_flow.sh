@@ -10,10 +10,11 @@
 
 set -euo pipefail
 
-TRELLIS_DIR="/workspace/repos/TRELLIS.2"
-CONFIG="/workspace/repos/3DAI/configs/trellis/slat_flow_img2shape_finetune.json"
-OUTPUT_DIR="/workspace/checkpoints/trellis/finetuned/shape_flow"
-DATA_DIR='{"Forge3D_Custom": {"base": "/workspace/data/trellis", "shape_latent": "shape_latent", "ss_latent": "ss_latent", "render_cond": "render_cond", "asset_stats": "asset_stats"}}'
+WORKSPACE="${WORKSPACE_DIR:-$HOME/workspace}"
+TRELLIS_DIR="$WORKSPACE/repos/TRELLIS.2"
+CONFIG="$WORKSPACE/repos/3DAI/configs/trellis/slat_flow_img2shape_finetune.json"
+OUTPUT_DIR="$WORKSPACE/checkpoints/trellis/finetuned/shape_flow"
+DATA_DIR='{"Forge3D_Custom": {"base": "'$WORKSPACE'/data/trellis", "shape_latent": "shape_latent", "ss_latent": "ss_latent", "render_cond": "render_cond", "asset_stats": "asset_stats"}}'
 NUM_GPUS="${NUM_GPUS:-1}"
 RESUME_STEP="${2:-}"
 
@@ -28,7 +29,7 @@ echo "========================================="
 # Pre-flight checks
 nvidia-smi || { echo "ERROR: No GPU available"; exit 1; }
 [ -d "$TRELLIS_DIR" ] || { echo "ERROR: TRELLIS.2 not found at $TRELLIS_DIR"; exit 1; }
-[ -d "/workspace/data/trellis/shape_latent" ] || { echo "ERROR: Training data not found. Run prep_trellis_data.sh first."; exit 1; }
+[ -d "$WORKSPACE/data/trellis/shape_latent" ] || { echo "ERROR: Training data not found. Run prep_trellis_data.sh first."; exit 1; }
 
 mkdir -p "$OUTPUT_DIR"
 
