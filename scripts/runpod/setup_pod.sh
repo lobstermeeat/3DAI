@@ -3,6 +3,11 @@
 # Run this once when a pod starts. Clones repos, installs deps, downloads checkpoints.
 # Assumes network volume mounted at $WORKSPACE
 #
+# Prerequisites:
+#   - Add your SSH public key to RunPod settings before starting the pod.
+#     Run: bash scripts/runpod/setup_ssh.sh
+#     Then add the printed public key at https://www.runpod.io/console/user/settings
+#
 # Usage: bash setup_pod.sh [--trellis|--hunyuan|--both]
 
 set -euo pipefail
