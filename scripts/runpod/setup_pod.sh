@@ -41,8 +41,18 @@ if [[ "$MODE" == "--trellis" || "$MODE" == "--both" ]]; then
 
     echo "[2/5] Installing TRELLIS.2 dependencies..."
     cd $WORKSPACE/repos/TRELLIS.2
+
+    # Install build prerequisites for custom CUDA extensions (o_voxel, flexgemm)
+    pip install ninja setuptools wheel 2>&1 | tail -3
+    apt-get update -qq && apt-get install -y -qq build-essential 2>&1 | tail -3
+
     if [ -f requirements.txt ]; then pip install -r requirements.txt 2>&1 | tail -5; fi
-    bash setup.sh --basic --flash-attn --o-voxel --flexgemm 2>&1 | tail -5
+
+    # Run setup; if o_voxel fails, retry without it
+    if ! bash setup.sh --basic --flash-attn --o-voxel --flexgemm 2>&1 | tail -10; then
+        echo "WARNING: Full setup failed. Retrying without --o-voxel..."
+        bash setup.sh --basic --flash-attn --flexgemm 2>&1 | tail -10
+    fi
     cd $WORKSPACE/repos
 fi
 
